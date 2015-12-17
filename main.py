@@ -6,23 +6,18 @@ import time , threading, sched , functools
 from chart_sample import Ui_MainWindow
 
                 
-scheduler = sched.scheduler(time.time, time.sleep)
 def timer (lex):
-    global scheduler
-    call = functools.partial( timer , lex )
-    for ex in lex:
-        name = ["Line1","Line2"]
-        for n in name:
-            line = ex.GetLineByName(n) 
-            if line is not None:
-                value = random.randint(-10, 58)
-                line.Description = str(value)
-                line.AddValue(value)
-            ex.update()
-    scheduler.enter(0.5,1,call,())
-    #print len(scheduler.queue)
-    
-    return scheduler.run()
+    while 1:
+        time.sleep(0.2)
+        for ex in lex:
+            name = ["Line1","Line2","Line3"]
+            for n in name:
+                line = ex.GetLineByName(n) 
+                if line is not None:
+                    value = random.randint(-128, 128)
+                    line.Description = str(value)
+                    line.AddValue(value)
+                ex.update()
 class Gui(QtGui.QMainWindow,Ui_MainWindow):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
@@ -35,10 +30,15 @@ def main():
     main_w.show()
     ex = [main_w.chart_1 , main_w.chart_2 , main_w.chart_4]
     #ex.show()
-    main_w.chart_1.AddLine("Line1")
-    main_w.chart_2.AddLine("Line1")
-    main_w.chart_4.AddLine("Line1")
-    main_w.chart_4.AddLine("Line2")
+    line1 = main_w.chart_1.AddLine("Line1")
+    line2 = main_w.chart_1.AddLine("Line2")
+    line2.SetPenColor(1,0,0,1)
+    line3 = main_w.chart_1.AddLine("Line3")
+    line3.SetPenColor(1,0,1,1)
+    line1 = main_w.chart_2.AddLine("Line1")
+    line1.SetPenColor(1,0,0,1)
+    line1 = main_w.chart_4.AddLine("Line1")
+    line2 = main_w.chart_4.AddLine("Line2")
     line = main_w.chart_4.GetLineByName("Line2")
     line.SetPenColor(1,0,0,1)
     call = functools.partial( timer , ex )

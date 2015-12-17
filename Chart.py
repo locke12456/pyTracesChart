@@ -18,6 +18,11 @@ class Line(object):
     @Description.setter
     def Description(self , str ):
         self._description = str
+    @property 
+    def MaxLenth(self):
+        max_value = max(self._values)
+        min_value = abs(max(self._values))
+        return max_value+min_value
     def AddValue(self , value = 0):
         if len(self._values) > self._max:
             self._values.pop(0)
@@ -27,13 +32,17 @@ class Line(object):
     def SetPenColor(self, r , g , b , a):
         self._color.setRgbF(r,g,b,a)
     def GetValue(self,index):
-        return self._values[index]
-
+        if index < self.Count:
+            return self._values[index]
+        else :
+            return 0
+    
 class Chart(QtGui.QWidget):
     valueUpdated = QtCore.pyqtSignal(int)
     _x = 0
     _y = 0
-    _shift = 0.0
+    _shift_w = 0.0
+    _shift_h = 0.0
     _lines = None
     def __init__(self , parent ):
         super(Chart, self).__init__(parent)
@@ -44,14 +53,14 @@ class Chart(QtGui.QWidget):
     def initUI(self): 
         self._color = QtGui.QColor(0,0,0)
     def AddLine(self,name):
-        self._lines[name] = Line()
+        line = Line()
+        self._lines[name] = line
+        return line
     def GetLineByName(self,name):
         if self._lines.has_key(name):
             return self._lines[name]
         return None
     def paintEvent(self, event = None):
-        #if len(self._values) == 0:
-        #    return
         qp = QtGui.QPainter()
         qp.begin(self)
         self.drawChart(event, qp)
@@ -59,31 +68,35 @@ class Chart(QtGui.QWidget):
     def _draw(self , qp ,item , pre_pos , index ):
         qp.setPen(item.GetPenColor())
         pos =  QtCore.QPointF( pre_pos.x() , pre_pos.y() )
-        to_pos =  QtCore.QPointF( index*self._shift , self._y - item.GetValue(index) )
-        pre_pos.setX(index*self._shift)
-        pre_pos.setY(self._y - item.GetValue(index))
+        to_pos =  QtCore.QPointF( index*self._shift_w , (self._y - item.GetValue(index)*self._shift_h) )
+        pre_pos.setX(index*self._shift_w)
+        pre_pos.setY((self._y - item.GetValue(index)*self._shift_h))
         if index != 0:
             qp.drawLine(pos , to_pos)
         return pre_pos
-    def drawChart(self, event, qp):
-        
-        self._shift = float(self.width())/self._max
+    def _drawText(self, qp , name , item , pos ):
+        name = item.Description
+        if pos.x() > len(name)*4:
+           pos.setX((pos.x()-len(name)*4)-4)
+        qp.drawText(pos , name)
+    def _counting_shift_values(self , item ):
+        avg = self.height()/8 if self.height()/8 > 16 else 16
+        height = self.height()-avg
+        max_height = item.MaxLenth+(avg) if item.MaxLenth > height else height
+        self._shift_w = float(self.width())/self._max
         self._y = float(self.height())/2
-
-        qp.setPen(self._color)
-
+        self._shift_h = round( float(height)/float(max_height) , 1 )
+        
+    def drawChart(self, event, qp):
         for litem in self._lines.items():
             name = litem[0]
             item = litem[1]
             if item.Count == 0:
                 continue
+            self._counting_shift_values(item)
             pre_x = 0
             pre_y = item.GetValue(0)
-            pre_pos =  QtCore.QPointF(pre_x,pre_y)
-            for x in range(0,(item.Count)):
-                pre_pos = self._draw(qp,item ,pre_pos,x)
-            pos = pre_pos
-            name = item.Description
-            if pos.x() > len(name)*4:
-                pos.setX((pos.x()-len(name)*4)-4)
-            qp.drawText(pos , name)
+            pos =  QtCore.QPointF(pre_x,pre_y)
+            for index in range(0,(item.Count)):
+                pos = self._draw(qp,item ,pos,index)
+            self._drawText(qp,name,item,pos)
