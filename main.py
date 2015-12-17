@@ -8,7 +8,7 @@ from chart_sample import Ui_MainWindow
                 
 def timer (lex):
     while 1:
-        time.sleep(0.2)
+        time.sleep(0.1)
         for ex in lex:
             name = ["Line1","Line2","Line3"]
             for n in name:
@@ -28,7 +28,7 @@ def main():
     app = QtGui.QApplication(sys.argv)
     main_w = Gui()
     main_w.show()
-    ex = [main_w.chart_1 , main_w.chart_2 , main_w.chart_4]
+    ex = [main_w.chart_1]# , main_w.chart_2 , main_w.chart_4]
     #ex.show()
     line1 = main_w.chart_1.AddLine("Line1")
     line2 = main_w.chart_1.AddLine("Line2")
@@ -42,6 +42,7 @@ def main():
     line = main_w.chart_4.GetLineByName("Line2")
     line.SetPenColor(1,0,0,1)
     call = functools.partial( timer , ex )
+    threading.Timer(1, call ).start()
     threading.Timer(1, call ).start()
     sys.exit(app.exec_())
 

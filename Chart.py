@@ -4,9 +4,11 @@ from PyQt4 import QtGui, QtCore
 class Line(object):
     _description = ""
     _values = None
+    _lock = None
     def __init__(self, *args, **kwargs):
         super(Line, self).__init__(*args, **kwargs)
         self._color = QtGui.QColor(0,0,0)
+        self._lock = QtCore.QMutex()
         self._values = []
         self._max = 60
     @property 
@@ -20,20 +22,27 @@ class Line(object):
         self._description = str
     @property 
     def MaxLenth(self):
+        self._lock.lock()
         max_value = max(self._values)
         min_value = abs(max(self._values))
+        self._lock.unlock()
         return max_value+min_value
     def AddValue(self , value = 0):
+        self._lock.lock()
         if len(self._values) > self._max:
             self._values.pop(0)
         self._values.append(value)
+        self._lock.unlock()
     def GetPenColor(self):
         return self._color
     def SetPenColor(self, r , g , b , a):
         self._color.setRgbF(r,g,b,a)
     def GetValue(self,index):
         if index < self.Count:
-            return self._values[index]
+            self._lock.lock()
+            val = self._values[index]
+            self._lock.unlock()
+            return val
         else :
             return 0
     
@@ -44,8 +53,10 @@ class Chart(QtGui.QWidget):
     _shift_w = 0.0
     _shift_h = 0.0
     _lines = None
+    _lock = None
     def __init__(self , parent ):
         super(Chart, self).__init__(parent)
+        self._lock = QtCore.QMutex()
         self._lines = {}   
         self._max = 60
         self.initUI()
@@ -61,10 +72,12 @@ class Chart(QtGui.QWidget):
             return self._lines[name]
         return None
     def paintEvent(self, event = None):
+        self._lock.lock()
         qp = QtGui.QPainter()
         qp.begin(self)
         self.drawChart(event, qp)
         qp.end()
+        self._lock.unlock()
     def _draw(self , qp ,item , pre_pos , index ):
         qp.setPen(item.GetPenColor())
         pos =  QtCore.QPointF( pre_pos.x() , pre_pos.y() )
