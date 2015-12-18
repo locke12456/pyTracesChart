@@ -27,11 +27,14 @@ class Line(object):
         min_value = abs(max(self._values))
         self._lock.unlock()
         return max_value+min_value
+    def SetSize(self,size):
+        self._max = size
     def AddValue(self , value = 0):
         self._lock.lock()
         if len(self._values) > self._max:
             self._values.pop(0)
         self._values.append(value)
+        print self.Count
         self._lock.unlock()
     def GetPenColor(self):
         return self._color
@@ -50,6 +53,9 @@ class Chart(QtGui.QWidget):
     valueUpdated = QtCore.pyqtSignal(int)
     _x = 0
     _y = 0
+    _min_val = 0
+    _max_val = 0
+    _center = 0.0
     _shift_w = 0.0
     _shift_h = 0.0
     _lines = None
@@ -62,7 +68,19 @@ class Chart(QtGui.QWidget):
         self.initUI()
     
     def initUI(self): 
+        self.setAutoFillBackground(True)
+        
+        palette = self.palette()
+        role = self.backgroundRole()
+        palette.setColor(role, QtGui.QColor('white'))
+        
+        self.setPalette(palette)
         self._color = QtGui.QColor(0,0,0)
+    def SetValueRange(self , min_val , max_val , center = 0):
+        self._min_val = min_val
+        self._max_val = max_val
+        self._center = (float(max_val - center))/float(abs(max_val)+abs(min_val))
+
     def AddLine(self,name):
         line = Line()
         self._lines[name] = line
@@ -78,38 +96,88 @@ class Chart(QtGui.QWidget):
         self.drawChart(event, qp)
         qp.end()
         self._lock.unlock()
+    def _value_to_position_y(self,val):
+        return (self._y - val*self._shift_h)
     def _draw(self , qp ,item , pre_pos , index ):
+        avg = self._avg_shift_width
         qp.setPen(item.GetPenColor())
-        pos =  QtCore.QPointF( pre_pos.x() , pre_pos.y() )
-        to_pos =  QtCore.QPointF( index*self._shift_w , (self._y - item.GetValue(index)*self._shift_h) )
-        pre_pos.setX(index*self._shift_w)
-        pre_pos.setY((self._y - item.GetValue(index)*self._shift_h))
+        pos =  QtCore.QPointF( avg + pre_pos.x() , pre_pos.y() )
+        to_pos =  QtCore.QPointF( avg + index*self._shift_w , self._value_to_position_y( item.GetValue(index) ) )
+        pre_pos.setX( index*self._shift_w )
+        pre_pos.setY( self._value_to_position_y( item.GetValue(index) ))
         if index != 0:
             qp.drawLine(pos , to_pos)
         return pre_pos
+    def _draw_ruler(self , qp , avg ):
+        back_color = QtGui.QColor(255,0,0,200)
+        shift = round(float(abs(self._max_val)+abs(self._min_val))/4,0)
+        for offset_y in range(0,5):
+            pos =  QtCore.QPointF( avg-avg/2 , self._value_to_position_y( self._min_val + offset_y*shift ) )
+            to_pos =  QtCore.QPointF( avg+avg/2 , self._value_to_position_y( self._min_val + offset_y*shift ) )
+            qp.drawLine(pos , to_pos)
+            pos =  QtCore.QPointF( avg-avg/2 , self._value_to_position_y( self._min_val + offset_y*shift ) )
+            self._drawTextTo(qp,str(self._min_val + offset_y*shift),pos , None ,back_color)
+    def _draw_background(self , qp  ):
+        self._avg_shift_width = avg = min(self.width(),self.height())/10# if self.height()/8 > 16 else 16
+        qp.setPen(QtGui.QColor(0,0,0,128))
+        pos =  QtCore.QPointF( 0 , self._y )
+        to_pos =  QtCore.QPointF( self.width() , self._y )
+        qp.drawLine(pos , to_pos)
+        self._draw_ruler(qp,avg)
+        for offset_x in range(0,self._max):
+            pos =  QtCore.QPointF( offset_x * avg , self._value_to_position_y( 5 ) )
+            to_pos =  QtCore.QPointF( offset_x * avg  , self._value_to_position_y( -5 ) )
+            qp.drawLine(pos , to_pos)
+        pos =  QtCore.QPointF( avg , 0 )
+        to_pos =  QtCore.QPointF( avg , self.height() )
+        qp.drawLine(pos , to_pos)
+    
+    def _drawTextTo(self, qp , name , pos , color = None , back_color = None):
+        if color is None :
+            color = QtGui.QColor(255,255,255,255)
+        if pos.x() > len(name)*4:
+           pos.setX((pos.x()-len(name)*4)-4)
+        pos.setX( pos.x()-len(name) )
+        if back_color is not None:
+            rect = QtCore.QRect(pos.x(),pos.y() - 10 , len(name)*4+8 , 12 )
+            qp.fillRect(rect ,back_color)
+        pen = qp.pen()
+        qp.setPen(color)
+        qp.drawText(pos , name)
+        qp.setPen(pen)
+
     def _drawText(self, qp , name , item , pos ):
         name = item.Description
         if pos.x() > len(name)*4:
            pos.setX((pos.x()-len(name)*4)-4)
+
+        pos.setX( self._avg_shift_width + pos.x() )
         qp.drawText(pos , name)
-    def _counting_shift_values(self , item ):
-        avg = self.height()/8 if self.height()/8 > 16 else 16
+    def _counting_shift_values(self ):
+        avg =self._avg_shift_width
+        #avg = self.height()/8 if self.height()/8 > 16 else 16
         height = self.height()-avg
-        max_height = item.MaxLenth+(avg) if item.MaxLenth > height else height
-        self._shift_w = float(self.width())/self._max
-        self._y = float(self.height())/2
+        len = abs(self._max_val)+abs(self._min_val)
+        max_height = len+avg #if len  height else height
+        self._shift_w = float(self.width()-avg*2)/self._max
+        self._y = float(self.height())*self._center
+        print self._shift_w
         self._shift_h = round( float(height)/float(max_height) , 1 )
         
     def drawChart(self, event, qp):
+        self._draw_background(qp)
         for litem in self._lines.items():
             name = litem[0]
             item = litem[1]
             if item.Count == 0:
                 continue
-            self._counting_shift_values(item)
+            
+            self._counting_shift_values()
             pre_x = 0
             pre_y = item.GetValue(0)
             pos =  QtCore.QPointF(pre_x,pre_y)
             for index in range(0,(item.Count)):
                 pos = self._draw(qp,item ,pos,index)
-            self._drawText(qp,name,item,pos)
+            #self._drawText(qp,name,item,pos)
+            text_pos = QtCore.QPointF(self._avg_shift_width*2 + pos.x(),pos.y() )
+            self._drawTextTo(qp,item.Description , text_pos , item.GetPenColor() , None )

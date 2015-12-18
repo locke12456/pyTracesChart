@@ -6,43 +6,49 @@ import time , threading, sched , functools
 from chart_sample import Ui_MainWindow
 
                 
-def timer (lex):
+def timer (win , lex):
     while 1:
-        time.sleep(0.1)
-        for ex in lex:
-            name = ["Line1","Line2","Line3"]
-            for n in name:
-                line = ex.GetLineByName(n) 
-                if line is not None:
-                    value = random.randint(-128, 128)
-                    line.Description = str(value)
-                    line.AddValue(value)
-                ex.update()
+        win.update()
+        time.sleep(0.5)
+        
 class Gui(QtGui.QMainWindow,Ui_MainWindow):
+    _lines = None
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.setupUi(self)
+        self._lines = [self.chart_1 , self.chart_2 , self.chart_4]
+        #ex.show()
+        line1 = self.chart_1.AddLine("Line1")
+        line1 = self.chart_2.AddLine("Line1")
+        line1.SetPenColor(1,0,0,1)
+        line1 = self.chart_4.AddLine("Line1")
+        line2 = self.chart_4.AddLine("Line2")
+        line = self.chart_4.GetLineByName("Line2")
+        line.SetPenColor(1,0,0,1)
+
+    def paintEvent(self, event = None):
+        #time.sleep(1)
+        print 1
+        for ex in self._lines:
+            name = ["Line1","Line2","Line3"]
+            ex.SetValueRange(-40, 120 , 0)
+            for n in name:
+                line = ex.GetLineByName(n) 
+                if line is not None:
+                    value = random.randint(40, 70)
+                    line.Description = str(float(value))
+                    line.AddValue(value)
+                ex.update()
         
 def main():
     
     app = QtGui.QApplication(sys.argv)
     main_w = Gui()
     main_w.show()
-    ex = [main_w.chart_1]# , main_w.chart_2 , main_w.chart_4]
-    #ex.show()
-    line1 = main_w.chart_1.AddLine("Line1")
-    line2 = main_w.chart_1.AddLine("Line2")
-    line2.SetPenColor(1,0,0,1)
-    line3 = main_w.chart_1.AddLine("Line3")
-    line3.SetPenColor(1,0,1,1)
-    line1 = main_w.chart_2.AddLine("Line1")
-    line1.SetPenColor(1,0,0,1)
-    line1 = main_w.chart_4.AddLine("Line1")
-    line2 = main_w.chart_4.AddLine("Line2")
-    line = main_w.chart_4.GetLineByName("Line2")
-    line.SetPenColor(1,0,0,1)
-    call = functools.partial( timer , ex )
-    threading.Timer(1, call ).start()
+    #threading.Timer(1, call ).start()
+    #threading.Timer(1, call ).start()
+    call = functools.partial( timer , main_w , None )
+    #threading.Timer(1, call ).start()
     threading.Timer(1, call ).start()
     sys.exit(app.exec_())
 
