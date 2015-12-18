@@ -124,9 +124,9 @@ class Chart(QtGui.QWidget):
         to_pos =  QtCore.QPointF( self.width() , self._y )
         qp.drawLine(pos , to_pos)
         self._draw_ruler(qp,avg)
-        for offset_x in range(0,self._max):
-            pos =  QtCore.QPointF( offset_x * avg , self._value_to_position_y( 5 ) )
-            to_pos =  QtCore.QPointF( offset_x * avg  , self._value_to_position_y( -5 ) )
+        for offset_x in range(0,self._max+1):
+            pos =  QtCore.QPointF( avg + offset_x * self._shift_w , self._value_to_position_y( avg/8 ) )
+            to_pos =  QtCore.QPointF( avg + offset_x * self._shift_w , self._value_to_position_y( -avg/8 ) )
             qp.drawLine(pos , to_pos)
         pos =  QtCore.QPointF( avg , 0 )
         to_pos =  QtCore.QPointF( avg , self.height() )
