@@ -124,7 +124,7 @@ class Chart(QtGui.QWidget):
             to_pos =  QtCore.QPointF( avg + offset_x * self._shift_w , self._value_to_position_y( -avg/8 ) )
             qp.drawLine(pos , to_pos)
     def _draw_background(self , qp  ):
-        self._avg_shift_width = avg = min(self.width(),self.height())/10# if self.height()/8 > 16 else 16
+        avg = self._avg_shift_width # if self.height()/8 > 16 else 16
         qp.setPen(QtGui.QColor(0,0,0,128))
         pos =  QtCore.QPointF( 0 , self._y )
         to_pos =  QtCore.QPointF( self.width() , self._y )
@@ -157,7 +157,7 @@ class Chart(QtGui.QWidget):
         pos.setX( self._avg_shift_width + pos.x() )
         qp.drawText(pos , name)
     def _counting_shift_values(self ):
-        avg =self._avg_shift_width
+        self._avg_shift_width = avg =  min(self.width(),self.height())/10
         #avg = self.height()/8 if self.height()/8 > 16 else 16
         height = self.height()-avg
         len = abs(self._max_val)+abs(self._min_val)
@@ -168,6 +168,7 @@ class Chart(QtGui.QWidget):
         self._shift_h = round( float(height)/float(max_height) , 1 )
         
     def drawChart(self, event, qp):
+        self._counting_shift_values()
         self._draw_background(qp)
         for litem in self._lines.items():
             name = litem[0]
@@ -175,7 +176,6 @@ class Chart(QtGui.QWidget):
             if item.Count == 0:
                 continue
             
-            self._counting_shift_values()
             pre_x = 0
             pre_y = item.GetValue(0)
             pos =  QtCore.QPointF(pre_x,pre_y)

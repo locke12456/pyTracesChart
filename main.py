@@ -25,10 +25,21 @@ class Gui(QtGui.QMainWindow,Ui_MainWindow):
         line2 = self.chart_4.AddLine("Line2")
         line = self.chart_4.GetLineByName("Line2")
         line.SetPenColor(1,0,0,1)
+        for ex in self._lines:
+            name = ["Line1","Line2","Line3"]
+            ex.SetValueRange(-40, 120)
+            for n in name:
+                line = ex.GetLineByName(n) 
+                if line is not None:
+                    value = random.randint(40, 70)
+                    line.Description = str(float(value))
+                    line.AddValue(value)
+                ex.update()
 
     def paintEvent(self, event = None):
         #time.sleep(1)
         print 1
+        #return 
         for ex in self._lines:
             name = ["Line1","Line2","Line3"]
             ex.SetValueRange(-40, 120)
