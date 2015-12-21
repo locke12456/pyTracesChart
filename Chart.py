@@ -76,7 +76,8 @@ class Chart(QtGui.QWidget):
         
         self.setPalette(palette)
         self._color = QtGui.QColor(0,0,0)
-    def SetValueRange(self , min_val , max_val , center = 0):
+    def SetValueRange(self , min_val , max_val):
+        center = 0
         self._min_val = min_val
         self._max_val = max_val
         self._center = (float(max_val - center))/float(abs(max_val)+abs(min_val))
@@ -108,7 +109,7 @@ class Chart(QtGui.QWidget):
         if index != 0:
             qp.drawLine(pos , to_pos)
         return pre_pos
-    def _draw_ruler(self , qp , avg ):
+    def _draw_ruler_v(self , qp , avg ):
         back_color = QtGui.QColor(255,0,0,200)
         shift = round(float(abs(self._max_val)+abs(self._min_val))/4,0)
         for offset_y in range(0,5):
@@ -117,17 +118,19 @@ class Chart(QtGui.QWidget):
             qp.drawLine(pos , to_pos)
             pos =  QtCore.QPointF( avg-avg/2 , self._value_to_position_y( self._min_val + offset_y*shift ) )
             self._drawTextTo(qp,str(self._min_val + offset_y*shift),pos , None ,back_color)
+    def _draw_ruler_h(self,qp,avg):
+        for offset_x in range(0,self._max+1):
+            pos =  QtCore.QPointF( avg + offset_x * self._shift_w , self._value_to_position_y( avg/8 ) )
+            to_pos =  QtCore.QPointF( avg + offset_x * self._shift_w , self._value_to_position_y( -avg/8 ) )
+            qp.drawLine(pos , to_pos)
     def _draw_background(self , qp  ):
         self._avg_shift_width = avg = min(self.width(),self.height())/10# if self.height()/8 > 16 else 16
         qp.setPen(QtGui.QColor(0,0,0,128))
         pos =  QtCore.QPointF( 0 , self._y )
         to_pos =  QtCore.QPointF( self.width() , self._y )
         qp.drawLine(pos , to_pos)
-        self._draw_ruler(qp,avg)
-        for offset_x in range(0,self._max+1):
-            pos =  QtCore.QPointF( avg + offset_x * self._shift_w , self._value_to_position_y( avg/8 ) )
-            to_pos =  QtCore.QPointF( avg + offset_x * self._shift_w , self._value_to_position_y( -avg/8 ) )
-            qp.drawLine(pos , to_pos)
+        self._draw_ruler_v(qp,avg)
+        self._draw_ruler_h(qp,avg)
         pos =  QtCore.QPointF( avg , 0 )
         to_pos =  QtCore.QPointF( avg , self.height() )
         qp.drawLine(pos , to_pos)

@@ -9,7 +9,7 @@ from chart_sample import Ui_MainWindow
 def timer (win , lex):
     while 1:
         win.update()
-        time.sleep(0.5)
+        time.sleep(1)
         
 class Gui(QtGui.QMainWindow,Ui_MainWindow):
     _lines = None
@@ -31,7 +31,7 @@ class Gui(QtGui.QMainWindow,Ui_MainWindow):
         print 1
         for ex in self._lines:
             name = ["Line1","Line2","Line3"]
-            ex.SetValueRange(-40, 120 , 0)
+            ex.SetValueRange(-40, 120)
             for n in name:
                 line = ex.GetLineByName(n) 
                 if line is not None:
